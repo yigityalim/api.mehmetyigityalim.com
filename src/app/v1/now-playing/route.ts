@@ -59,7 +59,7 @@ export async function GET(): Promise<Response> {
     const response = await getNowPlaying();
 
     if (response.status === 204 || response.status > 400) {
-      return createNotPlayingResponse();
+      return createNotPlayingResponse(response.status);
     }
 
     const song = (await response.json()) as SongResponse;
@@ -121,13 +121,13 @@ async function fetchArtistsData(artists: SongResponse["item"]["artists"]) {
   return Promise.all(artistPromises);
 }
 
-function createNotPlayingResponse(): Response {
+function createNotPlayingResponse(status?: number): Response {
   return new Response(
     JSON.stringify({
       isPlaying: false,
       currentPlaying: false,
     }),
-    { status: 200 },
+    { status: status ?? 200 },
   );
 }
 
