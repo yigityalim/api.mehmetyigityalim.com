@@ -1,4 +1,5 @@
 import { getArtist, getNowPlaying } from "@/lib/spotify";
+import { NextResponse, type NextRequest } from "next/server";
 
 export const runtime = "edge";
 export const revalidate = 0;
@@ -54,7 +55,7 @@ interface NowPlayingResponse {
   songPreviewUrl: string | null;
 }
 
-export async function GET(): Promise<Response> {
+export async function GET(): Promise<NextResponse> {
   try {
     const response = await getNowPlaying();
 
@@ -121,8 +122,8 @@ async function fetchArtistsData(artists: SongResponse["item"]["artists"]) {
   return Promise.all(artistPromises);
 }
 
-function createNotPlayingResponse(status?: number): Response {
-  return new Response(
+function createNotPlayingResponse(status?: number): NextResponse {
+  return new NextResponse(
     JSON.stringify({
       isPlaying: false,
       currentPlaying: false,
@@ -131,23 +132,26 @@ function createNotPlayingResponse(status?: number): Response {
   );
 }
 
-function createSuccessResponse(data: NowPlayingResponse): Response {
-  return new Response(JSON.stringify(data), {
+function createSuccessResponse(data: NowPlayingResponse): NextResponse {
+  return new NextResponse(JSON.stringify(data), {
     status: 200,
     headers: {
       "cache-control": "public, s-maxage=60, stale-while-revalidate=30",
       "content-type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET",
+      "Access-Control-Allow-Headers": "Content-Type",
     },
   });
 }
 
-function createErrorResponse(): Response {
-  return new Response(
+function createErrorResponse(): NextResponse {
+  return new NextResponse(
     JSON.stringify({ error: "An error occurred while fetching data" }),
     { status: 500 },
   );
 }
 
-export const POST = async () => new Response(null, { status: 405 });
-export const PUT = async () => new Response(null, { status: 405 });
-export const PATCH = async () => new Response(null, { status: 405 });
+export const POST = async () => new NextResponse(null, { status: 405 });
+export const PUT = async () => new NextResponse(null, { status: 405 });
+export const PATCH = async () => new NextResponse(null, { status: 405 });
