@@ -1,3 +1,4 @@
+import { revalidate } from "../app/v1/now-playing/route";
 const basic = Buffer.from(
   `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`,
 ).toString("base64");
@@ -29,8 +30,8 @@ export async function getNowPlaying() {
   return fetch(NOW_PLAYING_ENDPOINT, {
     headers: {
       Authorization: `Bearer ${access_token}`,
-      cache: "no-store",
     },
+    cache: "no-store",
   });
 }
 
@@ -41,6 +42,7 @@ export async function getArtist(artistId: string) {
     headers: {
       Authorization: `Bearer ${access_token}`,
     },
+    cache: "no-store",
   });
 }
 
@@ -76,6 +78,7 @@ export async function getTopTracks(): Promise<TopTracks> {
     headers: {
       Authorization: `Bearer ${access_token}`,
     },
+    cache: "no-store",
   });
 
   const { items } = (await response.json()) as { items: ResponseTrackType[] };
