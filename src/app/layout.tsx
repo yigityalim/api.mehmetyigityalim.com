@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import React from "react";
 
 export const metadata = {
   title: {
@@ -13,7 +12,9 @@ export const metadata = {
   },
 } satisfies Metadata;
 
-export default function RootLayout({ children }: React.PropsWithChildren<{}>) {
+export default async function RootLayout({
+  children,
+}: React.PropsWithChildren) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>{children}</body>
