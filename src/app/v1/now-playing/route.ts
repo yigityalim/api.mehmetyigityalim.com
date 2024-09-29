@@ -1,7 +1,27 @@
 import { getArtist, getNowPlaying } from "@/lib/spotify";
+import { type NextRequest, NextResponse } from "next/server";
 
 export const runtime = "edge";
 export const revalidate = 0;
+
+const allowedOrigins = [
+  "https://mehmetyigityalim.com",
+  "https://v2.mehmetyigityalim.com",
+  "https://api.mehmetyigityalim.com",
+] as const;
+
+function getCorsHeaders(origin: string | null): HeadersInit {
+  return {
+    "Access-Control-Allow-Origin": allowedOrigins.includes(
+      origin as (typeof allowedOrigins)[number],
+    )
+      ? (origin as string)
+      : (allowedOrigins[0] as string),
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
 
 interface SongResponse {
   item: {
@@ -55,26 +75,44 @@ interface NowPlayingResponse {
   songPreviewUrl: string | null;
 }
 
-export async function GET(): Promise<Response> {
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  const origin = request.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
   try {
     const response = await getNowPlaying();
 
     if (response.status === 204) {
-      return createNotPlayingResponse();
+      return NextResponse.json(
+        { status: 204 },
+        { status: 204, headers: corsHeaders },
+      );
     }
 
     const song = (await response.json()) as SongResponse;
 
     if (song.item === null) {
-      return createNotPlayingResponse();
+      return NextResponse.json(
+        { status: 204 },
+        { status: 204, headers: corsHeaders },
+      );
     }
 
     const nowPlayingData = await processNowPlayingData(song, response.status);
-    return createSuccessResponse(nowPlayingData);
+    return NextResponse.json(nowPlayingData, {
+      status: 200,
+      headers: corsHeaders,
+    });
   } catch (error: unknown) {
     console.log(error);
-
-    return createErrorResponse(error as Error);
+    return NextResponse.json(
+      {
+        error: "An error occurred while fetching data",
+        status: 500,
+        errorMessage: (error as Error).message,
+      },
+      { status: 500, headers: corsHeaders },
+    );
   }
 }
 
@@ -124,38 +162,32 @@ async function fetchArtistsData(artists: SongResponse["item"]["artists"]) {
   return Promise.all(artistPromises);
 }
 
-function createNotPlayingResponse(): Response {
-  return new Response(
-    JSON.stringify({
-      status: 204,
-    }),
-  );
+export async function OPTIONS(request: NextRequest): Promise<NextResponse> {
+  const origin = request.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
-function createSuccessResponse(data: NowPlayingResponse): Response {
-  return new Response(JSON.stringify(data), {
-    status: 200,
-    headers: {
-      "cache-control": "public, s-maxage=60, stale-while-revalidate=30",
-      "content-type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
+export async function POST(): Promise<NextResponse> {
+  return methodNotAllowed();
+}
+
+export async function PUT(): Promise<NextResponse> {
+  return methodNotAllowed();
+}
+
+export async function PATCH(): Promise<NextResponse> {
+  return methodNotAllowed();
+}
+
+export async function DELETE(): Promise<NextResponse> {
+  return methodNotAllowed();
+}
+
+function methodNotAllowed(): NextResponse {
+  return new NextResponse(null, {
+    status: 405,
+    headers: { Allow: "GET, OPTIONS" },
   });
 }
-
-function createErrorResponse(error: Error): Response {
-  return new Response(
-    JSON.stringify({
-      error: "An error occurred while fetching data",
-      status: 500,
-      errorMessage: error.message,
-    }),
-    { status: 500 },
-  );
-}
-
-export const POST = async () => new Response(null, { status: 405 });
-export const PUT = async () => new Response(null, { status: 405 });
-export const PATCH = async () => new Response(null, { status: 405 });
