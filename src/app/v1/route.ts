@@ -3,14 +3,9 @@ import { NextResponse } from "next/server";
 const data = {
   error: "Global API route not published",
   status: 404,
-};
+} as const;
 
-const res = new NextResponse(JSON.stringify(data), {
-  status: 404,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+const res = NextResponse.json<typeof data>(data, { status: 404 });
 
 export const GET = async () => res;
 export const POST = async () => res;
