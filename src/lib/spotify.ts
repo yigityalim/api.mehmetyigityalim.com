@@ -1,16 +1,10 @@
-import { revalidate } from "../app/v1/now-playing/route";
 const basic = Buffer.from(
   `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`,
 ).toString("base64");
-const NOW_PLAYING_ENDPOINT =
-  "https://api.spotify.com/v1/me/player/currently-playing";
-const TOP_TRACKS_ENDPOINT =
-  "https://api.spotify.com/v1/me/top/tracks?limit=10&time_range=long_term";
-const TOKEN_ENDPOINT = "https://accounts.spotify.com/api/token";
 
 export async function getAccessToken(): Promise<{ access_token: string }> {
   const response = await fetch(
-    `${TOKEN_ENDPOINT}?grant_type=refresh_token&refresh_token=${process.env.SPOTIFY_REFRESH_TOKEN}`,
+    `https://accounts.spotify.com/api/token?grant_type=refresh_token&refresh_token=${process.env.SPOTIFY_REFRESH_TOKEN}`,
     {
       method: "POST",
       next: { revalidate: 60 * 60 },
@@ -27,7 +21,7 @@ export async function getAccessToken(): Promise<{ access_token: string }> {
 export async function getNowPlaying() {
   const { access_token } = await getAccessToken();
 
-  return fetch(NOW_PLAYING_ENDPOINT, {
+  return fetch("https://api.spotify.com/v1/me/player/currently-playing", {
     headers: {
       Authorization: `Bearer ${access_token}`,
     },
@@ -73,13 +67,15 @@ export interface ResponseTrackType {
 export async function getTopTracks(): Promise<TopTracks> {
   const { access_token } = await getAccessToken();
 
-  const response = await fetch(TOP_TRACKS_ENDPOINT, {
-    next: { revalidate: 60 * 60 * 24 },
-    headers: {
-      Authorization: `Bearer ${access_token}`,
+  const response = await fetch(
+    "https://api.spotify.com/v1/me/top/tracks?limit=10&time_range=long_term",
+    {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+      cache: "no-store",
     },
-    cache: "no-store",
-  });
+  );
 
   const { items } = (await response.json()) as { items: ResponseTrackType[] };
 

@@ -1,5 +1,4 @@
 import { getArtist, getNowPlaying } from "@/lib/spotify";
-import { NextResponse, type NextRequest } from "next/server";
 
 export const runtime = "edge";
 export const revalidate = 0;
@@ -37,6 +36,7 @@ interface ArtistResponse {
 }
 
 interface NowPlayingResponse {
+  status: number;
   album: string;
   isAlbum: boolean;
   albumImageUrl: string;
@@ -55,12 +55,12 @@ interface NowPlayingResponse {
   songPreviewUrl: string | null;
 }
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(): Promise<Response> {
   try {
     const response = await getNowPlaying();
 
-    if (response.status === 204 || response.status > 400) {
-      return createNotPlayingResponse(response.status);
+    if (response.status === 204) {
+      return createNotPlayingResponse();
     }
 
     const song = (await response.json()) as SongResponse;
@@ -69,20 +69,23 @@ export async function GET(): Promise<NextResponse> {
       return createNotPlayingResponse();
     }
 
-    const nowPlayingData = await processNowPlayingData(song);
+    const nowPlayingData = await processNowPlayingData(song, response.status);
     return createSuccessResponse(nowPlayingData);
-  } catch (error) {
-    console.error("Error in GET request:", error);
-    return createErrorResponse();
+  } catch (error: unknown) {
+    console.log(error);
+
+    return createErrorResponse(error as Error);
   }
 }
 
 async function processNowPlayingData(
   song: SongResponse,
+  status: number,
 ): Promise<NowPlayingResponse> {
   const artistsData = await fetchArtistsData(song.item.artists);
 
   return {
+    status,
     album: song.item.album.name,
     isAlbum: song.item.type === "album",
     albumImageUrl: song.item.album.images[0]?.url ?? "",
@@ -109,7 +112,6 @@ async function fetchArtistsData(artists: SongResponse["item"]["artists"]) {
         image: artistData.images[0]?.url ?? null,
       };
     } catch (error) {
-      console.error(`Error fetching artist data for ${artist.name}:`, error);
       return {
         id: artist.id,
         name: artist.name,
@@ -122,18 +124,16 @@ async function fetchArtistsData(artists: SongResponse["item"]["artists"]) {
   return Promise.all(artistPromises);
 }
 
-function createNotPlayingResponse(status?: number): NextResponse {
-  return new NextResponse(
+function createNotPlayingResponse(): Response {
+  return new Response(
     JSON.stringify({
-      isPlaying: false,
-      currentPlaying: false,
+      status: 204,
     }),
-    { status: status ?? 200 },
   );
 }
 
-function createSuccessResponse(data: NowPlayingResponse): NextResponse {
-  return new NextResponse(JSON.stringify(data), {
+function createSuccessResponse(data: NowPlayingResponse): Response {
+  return new Response(JSON.stringify(data), {
     status: 200,
     headers: {
       "cache-control": "public, s-maxage=60, stale-while-revalidate=30",
@@ -145,13 +145,17 @@ function createSuccessResponse(data: NowPlayingResponse): NextResponse {
   });
 }
 
-function createErrorResponse(): NextResponse {
-  return new NextResponse(
-    JSON.stringify({ error: "An error occurred while fetching data" }),
+function createErrorResponse(error: Error): Response {
+  return new Response(
+    JSON.stringify({
+      error: "An error occurred while fetching data",
+      status: 500,
+      errorMessage: error.message,
+    }),
     { status: 500 },
   );
 }
 
-export const POST = async () => new NextResponse(null, { status: 405 });
-export const PUT = async () => new NextResponse(null, { status: 405 });
-export const PATCH = async () => new NextResponse(null, { status: 405 });
+export const POST = async () => new Response(null, { status: 405 });
+export const PUT = async () => new Response(null, { status: 405 });
+export const PATCH = async () => new Response(null, { status: 405 });
