@@ -3,6 +3,7 @@ import { getArtist } from "./spotify";
 import type { ArtistResponse, NowPlayingResponse, SongResponse } from "./types";
 
 export const allowedOrigins = [
+  "http://localhost:3000", // FIXME - Remove this in production
   "https://mehmetyigityalim.com",
   "https://v2.mehmetyigityalim.com",
   "https://api.mehmetyigityalim.com",
