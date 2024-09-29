@@ -24,6 +24,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           message: "No song is currently playing",
           messageTR: "Şu anda hiçbir şarkı çalmıyor",
         },
+        // FIXME - https://github.com/vercel/next.js/pull/48354
         { status: 200, headers: corsHeaders },
       );
     }
@@ -33,6 +34,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     if (song.item === null) {
       return NextResponse.json(
         { status: 204 },
+        // FIXME - https://github.com/vercel/next.js/pull/48354
         { status: 200, headers: corsHeaders },
       );
     }
@@ -63,6 +65,7 @@ export async function OPTIONS(request: NextRequest): Promise<NextResponse> {
     {
       method: "OPTIONS",
     },
+    // FIXME - https://github.com/vercel/next.js/pull/48354
     { status: 200, headers: corsHeaders },
   );
 }
