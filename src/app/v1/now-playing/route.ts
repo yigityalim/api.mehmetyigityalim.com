@@ -5,6 +5,7 @@ import {
   getCorsHeaders,
   methodNotAllowed,
   processNowPlayingData,
+  validateAuthorization,
 } from "@/lib/utils";
 
 export const runtime = "edge";
@@ -13,6 +14,12 @@ export const revalidate = 0;
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const origin = request.headers.get("origin");
   const corsHeaders = getCorsHeaders(origin);
+
+  // Validate the request authorization
+  const unauthorizedResponse = validateAuthorization(request);
+  if (unauthorizedResponse) {
+    return unauthorizedResponse;
+  }
 
   try {
     const response = await getNowPlaying();

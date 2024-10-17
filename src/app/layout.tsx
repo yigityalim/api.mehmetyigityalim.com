@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import * as crypto from "node:crypto";
 
 export const metadata = {
   title: {
